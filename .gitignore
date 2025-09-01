@@ -1,0 +1,26 @@
+# Folder dependensi. Folder ini akan dibuat ulang saat menjalankan `npm install`
+/node_modules
+
+# File environment variables. Berisi kunci API dan rahasia lainnya.
+# JANGAN PERNAH MENGIRIM FILE INI KE GIT.
+.env
+.env.local
+.env.*.local
+
+# File log
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Direktori hasil build (jika ada)
+/dist
+/build
+
+# Laporan testing
+/coverage
+
+# File yang dibuat oleh sistem operasi
+.DS_Store
+Thumbs.db
