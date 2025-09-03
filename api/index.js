@@ -1,6 +1,49 @@
 require('dotenv').config();
 const express = require('express');
+const mysql = require('mysql2/promise');
 const app = express();
+
+// Buat koneksi pool ke database
+const dbPool = mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    timezone: '+07:00',
+});
+
+app.use(express.json());
+
+app.get('/api/test-db', async (req, res) => {
+    try {
+        const [rows] = await dbPool.query('SELECT 1 + 1 AS solution');
+        res.json({ success: true, result: rows[0].solution });
+    } catch (error) {
+        console.error('Database query error:', error);
+        res.status(500).json({ success: false, message: 'Database query error' });
+    }
+});
+
+app.get('/api/fms', async (req, res) => {
+    try {
+        const sql = 'SELECT * FROM FMS_REPORT ORDER BY DATE DESC LIMIT 1;';
+
+        const [rows] = await dbPool.query(sql);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Data laporan tidak ditemukan.' });
+        }
+
+        res.status(200).json(rows[0]);
+
+    } catch (error) {
+        console.error('Terjadi kesalahan saat mengambil data:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
 
 app.get('/api/webhook', async (req, res) => {
     
