@@ -1,38 +1,56 @@
+// forward.js (CommonJS + Express Router)
 require('dotenv').config();
+const express = require('express');
 const axios = require('axios');
 
-// Handler default Vercel
-export default async function handler(req, res) {
-  // 1. Pastikan ini adalah request POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Metode tidak diizinkan, harus POST.' });
-  }
+const router = express.Router();
 
-  // 2. Ambil URL Power Automate dari Environment Variables Vercel
+/**
+ * POST /api/forward
+ * - Meneruskan body request (JSON) ke Power Automate (process.env.WEBHOOK_URL).
+ * - Opsi auth sederhana via header: x-app-token (cocokkan dengan process.env.APP_TOKEN).
+ */
+router.post('/', async (req, res) => {
   const targetUrl = process.env.WEBHOOK_URL;
   if (!targetUrl) {
-    return res.status(500).json({ message: 'Webhook URL tidak dikonfigurasi di server jembatan.' });
+    return res.status(500).json({
+      success: false,
+      message: 'Webhook URL tidak dikonfigurasi di server (WEBHOOK_URL).',
+    });
   }
 
-  // 3. Ambil seluruh payload (kartu adaptif, dll) yang dikirim oleh server internal Anda
+  // Auth opsional: pakai x-app-token (atau fallback ke body.token)
+  const clientToken = req.headers['x-app-token'] || req.body?.token;
+  if (process.env.APP_TOKEN && clientToken !== process.env.APP_TOKEN) {
+    return res.status(401).json({
+      success: false,
+      message: 'Token tidak valid atau tidak disertakan.',
+    });
+  }
+
   const payload = req.body;
 
   try {
-    // 4. Teruskan (forward) payload tersebut ke Power Automate
     const response = await axios.post(targetUrl, payload, {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 15000, // 15s timeout agar tidak ngegantung
     });
-    
-    // 5. Kembalikan sukses jika Power Automate menerima
-    res.status(200).json({ success: true, message: 'Berhasil diteruskan ke Power Automate.' });
 
-  } catch (error) {
-    // 6. Kembalikan error jika gagal
-    console.error("Gagal meneruskan ke Power Automate:", error.message);
-    res.status(502).json({ 
-        success: false, 
-        message: 'Gagal meneruskan ke Power Automate.', 
-        error: error.message 
+    return res.status(200).json({
+      success: true,
+      forwardStatus: response.status,
+      forwardStatusText: response.statusText,
+      targetResponse: response.data ?? null,
+    });
+  } catch (err) {
+    return res.status(502).json({
+      success: false,
+      message: 'Gagal meneruskan ke Power Automate.',
+      error: err.message,
+      targetStatus: err.response?.status,
+      targetData: err.response?.data,
     });
   }
-}
+});
+
+module.exports = router;

@@ -3,6 +3,7 @@ const express = require('express');
 const axios = require('axios');
 const mysql = require('mysql2/promise');
 const app = express();
+const forwardRouter = require('./forward');
 
 // Buat koneksi pool ke database
 const dbPool = mysql.createPool({
@@ -17,6 +18,8 @@ const dbPool = mysql.createPool({
 });
 
 app.use(express.json());
+
+app.use('/api/forward', forwardRouter);
 
 app.get('/api/test-db', async (req, res) => {
     try {
