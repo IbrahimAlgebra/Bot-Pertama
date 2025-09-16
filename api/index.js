@@ -129,6 +129,11 @@ app.get('/api/webhook', async (req, res) => {
   }
 });
 
+// Root endpoint untuk health check
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'API Forwarder is Running' });
+});
+
 // ===== Start Server =====
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
